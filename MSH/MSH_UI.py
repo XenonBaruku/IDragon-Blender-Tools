@@ -41,7 +41,7 @@ class MSH_Import_Panel:
 
 
 class MSH_Import(bpy.types.Operator, ImportHelper):
-    '''Import The I of the Dragon MESH File'''
+    '''Import The I of the Dragon MSH Files'''
     bl_idname = "idragon_msh.import"
     bl_label = 'Import MSH'
     bl_options = {'PRESET', 'UNDO'}

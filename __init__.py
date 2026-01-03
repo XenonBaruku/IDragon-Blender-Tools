@@ -2,8 +2,8 @@ bl_info = {
     "name": "IDragon Blender Tools",
     "author": "XenonValstrax",
     "blender": (2, 93, 0),
-    "version": (0, 6, 0),
-    "description": "Import MSH files from game - The I of the Dragon",
+    "version": (0, 7, 0),
+    "description": "Import MSH & ANM files from game - The I of the Dragon",
     "warning": "",
     "category": "Import-Export",
 }
@@ -12,6 +12,7 @@ import bpy
 from bpy.types import Context, Menu
 
 from .MSH.MSH_UI import MSH_Import
+from .ANM.ANM_UI import ANM_Import
 
 
 class CustomAddonPreferences(bpy.types.AddonPreferences):
@@ -32,6 +33,7 @@ class IDragon_import_menu(bpy.types.Menu):
     bl_idname = "IDRAGON_MT_menu_import"
 
     def draw(self, context):
+        self.layout.operator(ANM_Import.bl_idname, text="Animation Files (.ANM)", icon="ACTION")
         self.layout.operator(MSH_Import.bl_idname, text="Mesh Files (.MSH)", icon="MESH_DATA")
 
 def draw_import_menu(self: Menu, context: Context) -> None:
@@ -51,6 +53,7 @@ if bpy.app.version >= (4, 1, 0):
 
 def register() -> None:
     bpy.utils.register_class(MSH_Import)
+    bpy.utils.register_class(ANM_Import)
     bpy.utils.register_class(CustomAddonPreferences)
     bpy.utils.register_class(IDragon_import_menu)
     if bpy.app.version >= (4, 1, 0):
@@ -61,6 +64,7 @@ def register() -> None:
 
 def unregister() -> None:
     bpy.utils.unregister_class(MSH_Import)
+    bpy.utils.register_class(ANM_Import)
     bpy.utils.unregister_class(CustomAddonPreferences)
     bpy.utils.unregister_class(IDragon_import_menu)
     if bpy.app.version >= (4, 1, 0):

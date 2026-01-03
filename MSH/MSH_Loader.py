@@ -55,7 +55,7 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, 
 
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         for bone in armatureData.bones:
-            if bone.parent is not None:
+            if bone.parent:
                 bone['baserots'] = bone.matrix.inverted().to_quaternion()
                 bone['baseposs'] = (bone.parent.matrix_local.inverted() @ bone.matrix_local).to_translation()
         bpy.ops.object.mode_set(mode='POSE', toggle=False)
@@ -258,6 +258,7 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, 
                     if armatureObject:
                         objBoundingSub.parent = armatureObject
 
-
+    if armatureObject:
+        bpy.context.view_layer.objects.active = armatureObject
     bpy.ops.object.select_all(action='DESELECT')        
     return returnedObjects

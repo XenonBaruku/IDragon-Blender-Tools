@@ -1,21 +1,23 @@
 # IDragon Blender Tools #
-Blender (3.0+) addon for importing mesh files (\*.MSH), mainly from game <i><b>I of the Dragon</b> (2002)</i> by Primal Software.    
+Blender (3.0+) addon for importing MSH files (mesh) and ANM files (animation), mainly from game <i><b>I of the Dragon</b> (2002)</i> by Primal Software.    
 
 Currently work in progress.    
 
 ## Current Status
-VERSION: 0.6.0
+VERSION: 0.7.0
 
 Supported Features: 
  * Full meshes import (with normals, weights, UVs, etc.)
  * Full bones import
  * Textures import (with material setup)
  * Bounding planes import
+ * Animations import (Works, but not completed yet)
  * Merge meshes (by groups / materials)
  * Drag & drop import (Blender 4.1+ required) and multiple import
  
 Work In Progress: 
  * Animation files (\*.ANM) import
+ * Big & small mesh transition for dragons (as Shape keys)
 
 ## Details
 

@@ -18,15 +18,15 @@ class ANMParser():
         self.ANMVersionSub = self.fileStream.readUInt32()
         self.ANMVersionLast = self.fileStream.readUInt32()
 
-        boneCount = self.fileStream.readUInt32()
-        duration = self.fileStream.readFloat32()
+        self.boneCount = self.fileStream.readUInt32()
+        self.duration = self.fileStream.readFloat32()
         unknownMatrix = [
             [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()],
             [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()]
         ]
 
         boneInfos = []
-        for i in range(boneCount):
+        for i in range(self.boneCount):
             boneInfo = {}
             _ = self.fileStream.readUInt32()
             _ = self.fileStream.readFloat32()
@@ -37,7 +37,7 @@ class ANMParser():
             frameInfos = []
             for j in range(frameCount):
                 frameInfo = {}
-                frameInfo['timecode'] = self.fileStream.readFloat32()
+                frameInfo['duration'] = self.fileStream.readFloat32()
                 frameInfo['matrixGlobal'] = [
                     [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()],
                     [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()],
