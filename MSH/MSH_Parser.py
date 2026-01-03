@@ -15,10 +15,16 @@ class MSHParser():
         if self.magic != 536938242:
             raise RuntimeError(str("Invalid MSH file or not MSH file from The I of the Dragon."))
         
-        _ = self.fileStream.readUInt32()
-        _ = self.fileStream.readUInt32()
-        _ = self.fileStream.readUInt32()
-        _ = self.fileStream.readUInt32()
+        self.MSHVersion = self.fileStream.readUInt32()
+        self.MSHVersionSub = self.fileStream.readUInt32()
+        self.MSHVersionLast = self.fileStream.readUInt32()
+
+        # Render Flags: Binary array that controls how mesh was rendered.
+        #   1st byte
+        #       2nd bit - Unknown. May lead to access violation error while exiting the game when set to 1
+        #       5th bit - Alpha mode. Use alpha testing (0) or alpha blending (1) for transparency.
+        self.renderFlags = self.fileStream.readUInt32()
+        
         _ = self.fileStream.readUInt32()
 
         faceCount = self.fileStream.readUInt32()
@@ -35,9 +41,8 @@ class MSHParser():
 
         _ = self.fileStream.readUInt32()
         _ = self.fileStream.readUInt32()
-        unknownSectionLength = self.fileStream.readUInt32()
+        boundingSectionSize = self.fileStream.readUInt32()
 
-        
         self.fileStream.seek(self.bodyEntry)
 
         positions = []
@@ -107,8 +112,37 @@ class MSHParser():
             ]
             bone['name'] = self.fileStream.readString(self.fileStream.readUInt32())
             boneInfos.append(bone)
+        
+        boundingSectionEnd = self.fileStream.tell() + boundingSectionSize
+        boundingInfos = []
+        boundingPlaneCount = self.fileStream.readUInt32()
+        for i in range(boundingPlaneCount):
+            blockSize = self.fileStream.readUInt32()
+            blockEnd = self.fileStream.tell() + blockSize
+            pointCount = self.fileStream.readUInt32()
 
-        return vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix
+            boundingInfo = {
+                'points': [ [self.fileStream.readFloat32(), self.fileStream.readFloat32(), 0.0] for j in range(pointCount) ],
+            }
+
+            boundingCountExtra = self.fileStream.readUInt32()
+            extraBoundingInfos = []
+            for k in range(boundingCountExtra):
+                pointCountExtra = self.fileStream.readUInt32()
+                extraBounding = [ [self.fileStream.readFloat32(), self.fileStream.readFloat32(), 0.0] for l in range(pointCountExtra)  ]
+                extraBoundingInfos.append(extraBounding)
+            
+            boundingInfo['extraBoundingInfos'] = extraBoundingInfos
+                
+            
+            self.fileStream.seek(blockEnd)
+            boundingInfos.append(boundingInfo)
+
+        self.fileStream.seek(boundingSectionEnd)
+        MSHInfo = self.fileStream.readString(self.fileStream.readUInt32())
+        print(f"\nMSH Info: {MSHInfo}\n")
+
+        return vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix, boundingInfos
 
 
 

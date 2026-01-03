@@ -2,7 +2,7 @@ bl_info = {
     "name": "IDragon Blender Tools",
     "author": "XenonValstrax",
     "blender": (2, 93, 0),
-    "version": (0, 5, 0),
+    "version": (0, 6, 0),
     "description": "Import MSH files from game - The I of the Dragon",
     "warning": "",
     "category": "Import-Export",

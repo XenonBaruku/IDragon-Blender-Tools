@@ -22,6 +22,8 @@ class MSH_Import_Panel:
         col.row().label(text="Merge Mesh Parts: ")
         col.row().prop(panel, "mergeMeshes")
         col.separator()
+        col.row().prop(panel, "importBoundings")
+        col.separator()
         col.row().prop(panel, "importTextures")
         col.separator()
         
@@ -63,6 +65,11 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
 			   ],
         default = "NONE"
     )
+    importBoundings: BoolProperty(
+        name = "Import Bounding Planes", 
+        description = "Import 2D planes data stored in MSH files that likely to be bounds.",
+        default = False
+    )
     importTextures: BoolProperty(
         name = "Import Textures", 
         description = "Import textures and auto setup materials. Make sure textures path in addon preferences is set correctly.",
@@ -100,7 +107,7 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
             return {"CANCELLED"}
         
         for filepath in filepaths:
-            objs = loadMSH(filepath, None, self.mergeMeshes, self.importTextures, self.textureInterpolation, texturesDir=addon_prefs.texturesPath)
+            objs = loadMSH(filepath, None, self.mergeMeshes, self.importBoundings, self.importTextures, self.textureInterpolation, texturesDir=addon_prefs.texturesPath)
         return {"FINISHED"}
     
     def invoke(self, context, event):

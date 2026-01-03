@@ -5,9 +5,9 @@ from mathutils import Matrix
 
 from .MSH_Parser import MSHParser
 
-def loadMSH(filePath, collection=None, mergeMeshes=None, importTextures=False, textureInterpolation=None, /, *, texturesDir = None):
+def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, importTextures=False, textureInterpolation=None, /, *, texturesDir = None):
     parser = MSHParser(path=filePath)
-    vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix = parser.read()
+    vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix, boundingInfos = parser.read()
 
     fileName = os.path.basename(filePath).split(".")[0]
     if collection is None:
@@ -71,6 +71,9 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importTextures=False, t
 
     #meshName = fileName + '_Group[{}]_Index[{}]_Material[{}]'
     meshesToMerge = {}
+    colMeshes = bpy.data.collections.new(fileName + '_Meshes')
+    colMeshes.color_tag = "COLOR_01"
+    col.children.link(colMeshes)
     for mesh in meshInfos:
         if mergeMeshes == 'NONE':
             meshName = fileName + '_Group[{}]_Index[{}]_Material[{}]'.format(mesh['group'], meshInfos.index(mesh), mesh['textureIndex'])
@@ -80,7 +83,7 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importTextures=False, t
             meshName = fileName + '_merged_Material[{}]'.format(mesh['textureIndex'])
         meshNew = bpy.data.meshes.new(meshName)
         obj = bpy.data.objects.new(meshNew.name, meshNew)
-        col.objects.link(obj)
+        colMeshes.objects.link(obj)
         obj.rotation_mode = 'XYZ'
 
         meshFaces = []
@@ -88,10 +91,10 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importTextures=False, t
             meshFaces.append([index - mesh['vertexStart'] for index in faceInfos[mesh['faceStart'] // 3 + i]])
         meshNew.from_pydata(vertexInfoDict['positions'][mesh['vertexStart']:mesh['vertexStart'] + mesh['vertexCount']], [], meshFaces)
 
-        if armatureObject is not None:
-                obj.parent = armatureObject
-                armatureModifier = obj.modifiers.new('Armature', 'ARMATURE')
-                armatureModifier.object = armatureObject
+        if armatureObject:
+            obj.parent = armatureObject
+            armatureModifier = obj.modifiers.new('Armature', 'ARMATURE')
+            armatureModifier.object = armatureObject
         
         bpy.context.view_layer.objects.active = obj
 
@@ -173,9 +176,17 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importTextures=False, t
                 links.new(mixShader.outputs[0], outputMaterial.inputs[0])
                 links.new(transparentShader.outputs[0], mixShader.inputs[1])
                 links.new(diffuseShader.outputs[0], mixShader.inputs[2])
-                links.new(texImage.outputs[0], diffuseShader.inputs[0])
-                links.new(texImage.outputs[1], mixShader.inputs[0])
                 links.new(UVMapNode.outputs[0], texImage.inputs[0])
+                links.new(texImage.outputs[0], diffuseShader.inputs[0])
+                if parser.renderFlags & (1 << 4):  # Alpha blending
+                    links.new(texImage.outputs[1], mixShader.inputs[0])
+                else:  # Alpha testing
+                    mathNode = nodes.new('ShaderNodeMath')
+                    mathNode.location = (-352, -133)
+                    mathNode.operation = 'GREATER_THAN'
+                    mathNode.inputs[1].default_value = 254 / 255
+                    links.new(texImage.outputs[1], mathNode.inputs[0])
+                    links.new(mathNode.outputs[0], mixShader.inputs[0])
 
             else:
                 mat = bpy.data.materials[materialName]
@@ -208,6 +219,45 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importTextures=False, t
                     groupObj.select_set(True)
                 bpy.context.view_layer.objects.active = listObj[0]
                 bpy.ops.object.join()
+
+    if importBoundings:
+        colBoundings = bpy.data.collections.new(fileName + "_BoundingPlanes")
+        colBoundings.color_tag = "COLOR_05"
+        col.children.link(colBoundings)
+
+        for boundingPlane in boundingInfos:
+            meshBoundingPlane = bpy.data.meshes.new("{}_BoundingPlane_{}".format(fileName, boundingInfos.index(boundingPlane)))
+            objBoundingPlane = bpy.data.objects.new(meshBoundingPlane.name, meshBoundingPlane)
+            colBoundings.objects.link(objBoundingPlane)
+            objBoundingPlane.rotation_mode = 'XYZ'
+
+            if len(boundingPlane['points']) == 1:
+                meshBoundingPlane.from_pydata(boundingPlane['points'], [], [])
+            elif len(boundingPlane['points']) == 2:
+                meshBoundingPlane.from_pydata(boundingPlane['points'], [0, 1], [])
+            else:
+                meshBoundingPlane.from_pydata(boundingPlane['points'], [], [range(len(boundingPlane['points']))])
+            
+            if armatureObject:
+                objBoundingPlane.parent = armatureObject
+
+            if boundingPlane['extraBoundingInfos']:
+                for extraBounding in boundingPlane['extraBoundingInfos']:
+                    meshBoundingSub = bpy.data.meshes.new("{}_BoundingPlane_{}_Sub_{}".format(fileName, boundingInfos.index(boundingPlane), boundingPlane['extraBoundingInfos'].index(extraBounding)))
+                    objBoundingSub = bpy.data.objects.new(meshBoundingSub.name, meshBoundingSub)
+                    colBoundings.objects.link(objBoundingSub)
+                    objBoundingSub.rotation_mode = 'XYZ'
+                    
+                    if len(boundingPlane['points']) == 1:
+                        meshBoundingPlane.from_pydata(boundingPlane['points'], [], [])
+                    elif len(boundingPlane['points']) == 2:
+                        meshBoundingPlane.from_pydata(boundingPlane['points'], [0, 1], [])
+                    else:
+                        meshBoundingSub.from_pydata(extraBounding, [], [range(len(extraBounding))])
+
+                    if armatureObject:
+                        objBoundingSub.parent = armatureObject
+
 
     bpy.ops.object.select_all(action='DESELECT')        
     return returnedObjects

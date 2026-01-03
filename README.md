@@ -4,14 +4,15 @@ Blender (3.0+) addon for importing mesh files (\*.MSH), mainly from game <i><b>I
 Currently work in progress.    
 
 ## Current Status
-VERSION: 0.5
+VERSION: 0.6.0
 
 Supported Features: 
  * Full meshes import (with normals, weights, UVs, etc.)
  * Full bones import
  * Textures import (with material setup)
+ * Bounding planes import
  * Merge meshes (by groups / materials)
- * Drag & drop import (Blender 4.1+ required) and multiple import supported.
+ * Drag & drop import (Blender 4.1+ required) and multiple import
  
 Work In Progress: 
  * Animation files (\*.ANM) import
@@ -21,13 +22,13 @@ Work In Progress:
 ![Blender Screenshot](IMAGES/Screenshot.png)
 
 ### Installation & Configuration
- 1. Download the repository as ZIP and install like usual Blender addons.
+ 1. Download the addon from [releases](https://github.com/XenonBaruku/IDragon-Blender-Tools/releases), or download the repository as ZIP, then install like usual Blender addons.
  2. Config unpacked textures directory in addon preferences.
  ![Addon Preferences](IMAGES/AddonPreferences.png)
  3. Check <b>File > Import</b>, there should be a new item named <b><i>The I of the Dragon</i></b>, with all supported file types in it.
 
 ### MSH Import
-#### Import Settings    
+<b>Import Settings</b>    
 
 ![Import Settings](IMAGES/ImportSettings.png)
 
@@ -37,6 +38,8 @@ Work In Progress:
  * <b>None</b> - Do not merge mesh parts
  * <b>By Groups</b> - Merge mesh parts by group IDs
  * <b>By Textures</b> - Merge mesh parts by textures used
+
+<b>Import Bounding Planes</b>: Import 2D planes data stored in MSH files that likely to be bounds.
 
 <b>Import Textures</b>: Whether import textures (and setup materials) or not. Note that textures directory in addon preferences must be set in order to use this.
 
