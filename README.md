@@ -4,7 +4,7 @@ Blender (3.0+) addon for importing MSH files (mesh) and ANM files (animation), m
 Currently work in progress.    
 
 ## Current Status
-VERSION: 1.0.0
+VERSION: 1.0.1
 
 Supported Features: 
  * Full meshes import (with normals, weights, UVs, etc.)

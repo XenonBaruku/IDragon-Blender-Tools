@@ -290,17 +290,17 @@ def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None
     if mergeMeshes != 'NONE':
         for listObj in meshesToMerge.values():
             mergedMeshes = []
-            with bpy.context.temp_override(active_object=listObj[0], selected_editable_objects=listObj):
-                bpy.ops.object.select_all(action='DESELECT')
-                for mergeObj in listObj:
-                    mergeObj.select_set(True)
-                    mergedMeshes.append(mergeObj.data)
-                bpy.context.view_layer.objects.active = listObj[0]
-                bpy.ops.object.join()
+            #with bpy.context.temp_override(active_object=listObj[0], selected_editable_objects=listObj):
+            bpy.ops.object.select_all(action='DESELECT')
+            for mergeObj in listObj:
+                mergeObj.select_set(True)
+                mergedMeshes.append(mergeObj.data)
+            bpy.context.view_layer.objects.active = listObj[0]
+            bpy.ops.object.join()
 
-                for meshDataMerged in mergedMeshes:
-                    if meshDataMerged.users == 0:
-                        bpy.data.meshes.remove(meshDataMerged)
+            for meshDataMerged in mergedMeshes:
+                if meshDataMerged.users == 0:
+                    bpy.data.meshes.remove(meshDataMerged)
 
     if importBoundings:
         if createCollections:
