@@ -15,22 +15,18 @@ class MSH_Import_Panel:
         candidate_modules = [mod for mod in addon_utils.modules() if mod.bl_info["name"] == "IDragon Blender Tools"]
         mod = candidate_modules[0]
         addon_prefs = context.preferences.addons[mod.__name__].preferences
-        layout = panel.layout
+
         box = panel.layout.box()
         box.label(text="Options", icon="SETTINGS")
         col = box.column()
+        col.row().prop(panel, "createCollections")
+        col.separator()
         col.row().label(text="Merge Mesh Parts: ")
         col.row().prop(panel, "mergeMeshes")
         col.separator()
-        col.row().prop(panel, "importBoundings")
-        col.separator()
         col.row().prop(panel, "importTextures")
         col.separator()
-        
-
         if panel.importTextures:
-            #col2 = box.column()
-            #col2.row().label(text="Texture Options: ")
             col.row().label(text="Texture Interpolation: ")
             col.row().prop(panel, "textureInterpolation")
             col.separator()
@@ -38,6 +34,14 @@ class MSH_Import_Panel:
                 col.row().label(icon="ERROR", text="Textures directory is not set.")
                 col.row().label(text="See addon preferences for the setting.")
                 col.separator()
+        col.row().prop(panel, "importBoundings")
+        col.separator()
+
+        #box2 = panel.layout.box()
+        #box2.label(text="Advanced", icon="FILE_CACHE")
+        #col2 = box2.column()
+        #col2.row().prop(panel, "importDragonShapeKeys")
+        #col2.separator()
 
 
 class MSH_Import(bpy.types.Operator, ImportHelper):
@@ -49,11 +53,16 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=OperatorFileListElement)
     directory : StringProperty(
-			subtype='DIR_PATH',
-			options={'SKIP_SAVE'}
+			subtype = 'DIR_PATH',
+			options = {'SKIP_SAVE'}
 	)
     filter_glob: StringProperty(default="*.MSH")
 
+    createCollections: BoolProperty(
+        name = "Create Collections", 
+        description = "Create collections for imported meshes, bounding planes, etc.",
+        default = True
+    )
     mergeMeshes: EnumProperty(
         #name ="Merge Meshes",
         name = "",
@@ -87,6 +96,11 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
 			   ],
         default = "Linear"
     )
+    importDragonShapeKeys: BoolProperty(
+        name = "Import Shape Keys (Dragons Only)", 
+        description = "Import big & small transition for dragon models as shape keys.\nThe dragon body would slightly change from small to big by some factors (maybe character levels or play time) in the original game.\n\nWhen True, the tool will load data from both big & small MSH files, and import them as Blender shape keys.\nSelect one of the big or small MSH file, the tool will auto detect another one from the same directory.\n\nDo NOT use this on other MSH files.",
+        default = False
+    )
 
     def draw(self, context):
         MSH_Import_Panel.draw_options(self, context)
@@ -107,7 +121,7 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
             return {"CANCELLED"}
         
         for filepath in filepaths:
-            objs = loadMSH(filepath, None, self.mergeMeshes, self.importBoundings, self.importTextures, self.textureInterpolation, texturesDir=addon_prefs.texturesPath)
+            objs = loadMSH(filepath, None, self.createCollections, self.mergeMeshes, self.importBoundings, self.importTextures, self.textureInterpolation, texturesDir=addon_prefs.texturesPath)
         return {"FINISHED"}
     
     def invoke(self, context, event):

@@ -13,7 +13,7 @@ class ANMParser():
         self.bodyEntry = self.fileStream.readUInt32()
         self.magic = self.fileStream.readUInt32()
         if self.magic != 536937236:
-            raise RuntimeError(str("Invalid ANM file or not ANM file from The I of the Dragon."))
+            raise RuntimeError("Invalid ANM file or not an ANM file from IotD: {}".format(self.path))
         self.ANMVersion = self.fileStream.readUInt32()
         self.ANMVersionSub = self.fileStream.readUInt32()
         self.ANMVersionLast = self.fileStream.readUInt32()

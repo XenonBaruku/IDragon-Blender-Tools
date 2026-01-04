@@ -5,15 +5,19 @@ from mathutils import Matrix
 
 from .MSH_Parser import MSHParser
 
-def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, importTextures=False, textureInterpolation=None, /, *, texturesDir = None):
+
+def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None, importBoundings=False, importTextures=False, textureInterpolation=None, /, *, texturesDir = None):
     parser = MSHParser(path=filePath)
     vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix, boundingInfos = parser.read()
 
     fileName = os.path.basename(filePath).split(".")[0]
     if collection is None:
         master_collection = bpy.context.scene.collection
-        col = bpy.data.collections.new(fileName)
-        master_collection.children.link(col)
+        if createCollections:
+            col = bpy.data.collections.new(fileName)
+            master_collection.children.link(col)
+        else:
+            col = master_collection
     else:
         col = collection
 
@@ -71,9 +75,12 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, 
 
     #meshName = fileName + '_Group[{}]_Index[{}]_Material[{}]'
     meshesToMerge = {}
-    colMeshes = bpy.data.collections.new(fileName + '_Meshes')
-    colMeshes.color_tag = "COLOR_01"
-    col.children.link(colMeshes)
+    if createCollections:
+        colMeshes = bpy.data.collections.new(fileName + '_Meshes')
+        colMeshes.color_tag = "COLOR_01"
+        col.children.link(colMeshes)
+    else:
+        colMeshes = col
     for mesh in meshInfos:
         if mergeMeshes == 'NONE':
             meshName = fileName + '_Group[{}]_Index[{}]_Material[{}]'.format(mesh['group'], meshInfos.index(mesh), mesh['textureIndex'])
@@ -109,16 +116,12 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, 
 
         meshWeights = vertexInfoDict['weights'][mesh['vertexStart']:mesh['vertexStart'] + mesh['vertexCount']]
         for boneIndex in mesh['boneIndices']:
-            if mesh['boneIndices'].index(boneIndex) < 3:
-                VGroup = obj.vertex_groups.new(name=boneInfos[boneIndex]['name'])
-                for i in range(mesh['vertexCount']):
-                    if meshWeights[i][mesh['boneIndices'].index(boneIndex)] > 0:
-                        VGroup.add([i], meshWeights[i][mesh['boneIndices'].index(boneIndex)], 'ADD')
-            else:
-                VGroup = obj.vertex_groups.new(name=boneInfos[boneIndex]['name'])
-                for i in range(mesh['vertexCount']):
-                    if meshWeights[i][0] + meshWeights[i][1] + meshWeights[i][0] != 1.0:
-                        VGroup.add([i], (1 - meshWeights[i][0] - meshWeights[i][1] - meshWeights[i][2]), 'ADD')
+            if boneIndex == 0xFFFFFFFF:
+                continue
+            VGroup = obj.vertex_groups.new(name=boneInfos[boneIndex]['name'])
+            for i in range(mesh['vertexCount']):
+                if meshWeights[i][mesh['boneIndices'].index(boneIndex)] > 0.0:
+                    VGroup.add([i], meshWeights[i][mesh['boneIndices'].index(boneIndex)], 'ADD')
 
         UVLayer = meshNew.uv_layers.new(name='UVMap')
         for face in meshNew.polygons:
@@ -221,9 +224,12 @@ def loadMSH(filePath, collection=None, mergeMeshes=None, importBoundings=False, 
                 bpy.ops.object.join()
 
     if importBoundings:
-        colBoundings = bpy.data.collections.new(fileName + "_BoundingPlanes")
-        colBoundings.color_tag = "COLOR_05"
-        col.children.link(colBoundings)
+        if createCollections:
+            colBoundings = bpy.data.collections.new(fileName + "_BoundingPlanes")
+            colBoundings.color_tag = "COLOR_05"
+            col.children.link(colBoundings)
+        else:
+            colBoundings = col
 
         for boundingPlane in boundingInfos:
             meshBoundingPlane = bpy.data.meshes.new("{}_BoundingPlane_{}".format(fileName, boundingInfos.index(boundingPlane)))

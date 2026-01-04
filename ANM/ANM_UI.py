@@ -7,6 +7,7 @@ from bpy_extras.io_utils import ImportHelper
 
 from .ANM_Loader import loadANM
 
+
 class ANM_Import_Panel:
     @staticmethod
     def draw_options(panel: Panel | Operator, context) -> None:
@@ -33,14 +34,15 @@ class ANM_Import(bpy.types.Operator, ImportHelper):
 
     files: CollectionProperty(type=OperatorFileListElement)
     directory : StringProperty(
-			subtype='DIR_PATH',
-			options={'SKIP_SAVE'}
+			subtype = 'DIR_PATH',
+			options = {'SKIP_SAVE'}
 	)
     filter_glob: StringProperty(default="*.ANM")
 
     armature: StringProperty( 
         name = "", 
-        description = "Set the armature that imported animations attach to."
+        description = "Set the armature that imported animations attach to.",
+        options = {'SKIP_SAVE'}
     )
     framerate: IntProperty(
         name = "",
@@ -72,6 +74,17 @@ class ANM_Import(bpy.types.Operator, ImportHelper):
         else:
             filepaths = [str(self.filepath)]
 
+        if not self.armature:
+            self.report({"ERROR"}, "Armature is not set.")
+            return {"CANCELLED"}
+
         for filepath in filepaths:
-            anms = loadANM(filepath, self.armature, self.addFakeUser)
+            anms = loadANM(filepath, self.armature, self.addFakeUser, self.framerate)
         return {"FINISHED"}
+    
+    def invoke(self, context, event):
+        if self.directory:
+            context.window_manager.invoke_props_dialog(self)
+        else:
+            context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}

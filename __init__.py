@@ -2,7 +2,7 @@ bl_info = {
     "name": "IDragon Blender Tools",
     "author": "XenonValstrax",
     "blender": (2, 93, 0),
-    "version": (0, 7, 0),
+    "version": (0, 9, 0),
     "description": "Import MSH & ANM files from game - The I of the Dragon",
     "warning": "",
     "category": "Import-Export",
@@ -50,6 +50,16 @@ if bpy.app.version >= (4, 1, 0):
         @classmethod
         def poll_drop(cls, context):
             return (context.area and context.area.type == 'VIEW_3D')
+        
+    class ANM_FH_drag_import(bpy.types.FileHandler):
+        bl_idname = "ANM_FH_drag_import"
+        bl_label = "IDragon ANM drag & drop file handler"
+        bl_import_operator = "idragon_anm.import"
+        bl_file_extensions = ".ANM"
+
+        @classmethod
+        def poll_drop(cls, context):
+            return (context.area and context.area.type == 'VIEW_3D')
 
 def register() -> None:
     bpy.utils.register_class(MSH_Import)
@@ -58,6 +68,7 @@ def register() -> None:
     bpy.utils.register_class(IDragon_import_menu)
     if bpy.app.version >= (4, 1, 0):
         bpy.utils.register_class(MSH_FH_drag_import)
+        bpy.utils.register_class(ANM_FH_drag_import)
     bpy.types.TOPBAR_MT_file_import.append(draw_import_menu)
     #bpy.types.TOPBAR_MT_file_export.append(draw_export_menu)
     pass
@@ -69,6 +80,7 @@ def unregister() -> None:
     bpy.utils.unregister_class(IDragon_import_menu)
     if bpy.app.version >= (4, 1, 0):
         bpy.utils.unregister_class(MSH_FH_drag_import)
+        bpy.utils.register_class(ANM_FH_drag_import)
     bpy.types.TOPBAR_MT_file_import.remove(draw_import_menu)
     #bpy.types.TOPBAR_MT_file_export.remove(draw_export_menu)
     pass

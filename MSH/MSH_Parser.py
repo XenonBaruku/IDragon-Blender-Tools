@@ -13,7 +13,7 @@ class MSHParser():
         self.bodyEntry = self.fileStream.readUInt32()
         self.magic = self.fileStream.readUInt32()
         if self.magic != 536938242:
-            raise RuntimeError(str("Invalid MSH file or not MSH file from The I of the Dragon."))
+            raise RuntimeError("Invalid MSH file or not a MSH file from IotD: {}".format(self.path))
         
         self.MSHVersion = self.fileStream.readUInt32()
         self.MSHVersionSub = self.fileStream.readUInt32()
@@ -51,7 +51,8 @@ class MSHParser():
         UV = []
         for i in range(vertexCount):
             positions.append([self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()])
-            weights.append([self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()])
+            weightsRaw = [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()]
+            weights.append([weightsRaw[0], weightsRaw[1], weightsRaw[2], 1.0 - weightsRaw[0] - weightsRaw[1] - weightsRaw[2]])
             normals.append([self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()])
             UV.append([self.fileStream.readFloat32(), -self.fileStream.readFloat32() + 1.0]) # Filp UV by Y axis
         vertexInfoDict = {
@@ -82,8 +83,7 @@ class MSHParser():
             boneIndices = []
             for k in range(4):
                 bone = self.fileStream.readUInt32()
-                if bone != 0xFFFFFFFF:
-                    boneIndices.append(bone)
+                boneIndices.append(bone)
             mesh['boneIndices'] = boneIndices
 
             meshTexture = self.fileStream.readString(self.fileStream.readUInt32())
