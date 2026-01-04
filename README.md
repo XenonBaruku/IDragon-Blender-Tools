@@ -47,7 +47,7 @@ Supported Features:
 
 <b>Import Bounding Planes</b>: Import 2D planes data stored in MSH files that likely to be bounds.
 
-<b>Import Shape Keys (Dragons Only)</b>: Import big & small transitions for dragon models as Blender shape keys. (NOT IMPLEMENTED YET)
+<b>Import Shape Keys (Dragons Only)</b>: Import big & small transitions for dragon models as Blender shape keys.
 
 ### ANM Import
 
