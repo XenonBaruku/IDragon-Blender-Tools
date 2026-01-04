@@ -37,11 +37,11 @@ class MSH_Import_Panel:
         col.row().prop(panel, "importBoundings")
         col.separator()
 
-        #box2 = panel.layout.box()
-        #box2.label(text="Advanced", icon="FILE_CACHE")
-        #col2 = box2.column()
-        #col2.row().prop(panel, "importDragonShapeKeys")
-        #col2.separator()
+        box2 = panel.layout.box()
+        box2.label(text="Advanced", icon="FILE_CACHE")
+        col2 = box2.column()
+        col2.row().prop(panel, "importDragonShapeKeys")
+        col2.separator()
 
 
 class MSH_Import(bpy.types.Operator, ImportHelper):
@@ -71,6 +71,7 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
                 ("NONE", "None", "No mesh parts would be merged."),
                 ("GROUP", "By Groups", "Merge mesh parts by groups."),
 				("TEXTURE", "By Textures", "Merge mesh parts by textures."),
+                ("ALL", "All", "Merge all imported mesh parts.")
 			   ],
         default = "NONE"
     )
@@ -121,7 +122,9 @@ class MSH_Import(bpy.types.Operator, ImportHelper):
             return {"CANCELLED"}
         
         for filepath in filepaths:
-            objs = loadMSH(filepath, None, self.createCollections, self.mergeMeshes, self.importBoundings, self.importTextures, self.textureInterpolation, texturesDir=addon_prefs.texturesPath)
+            objs, warnings = loadMSH(filepath, None, self.createCollections, self.mergeMeshes, self.importBoundings, self.importDragonShapeKeys, self.importTextures, self.textureInterpolation, texturesDir=addon_prefs.texturesPath)
+            for warning in warnings:
+                self.report({"WARNING"}, warning)
         return {"FINISHED"}
     
     def invoke(self, context, event):

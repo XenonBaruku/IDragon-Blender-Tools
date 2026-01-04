@@ -27,17 +27,17 @@ class MSHParser():
         
         _ = self.fileStream.readUInt32()
 
-        faceCount = self.fileStream.readUInt32()
+        self.faceCount = self.fileStream.readUInt32()
         armatureOriginMatrix = [
             [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32(), 0.0],
             [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32(), 0.0],
             [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32(), 0.0],
             [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32(), 1.0],
         ]
-        vertexCount = self.fileStream.readUInt32()
-        indexCount = self.fileStream.readUInt32()
-        meshCount = self.fileStream.readUInt32()
-        boneCount = self.fileStream.readUInt32()
+        self.vertexCount = self.fileStream.readUInt32()
+        self.indexCount = self.fileStream.readUInt32()
+        self.meshCount = self.fileStream.readUInt32()
+        self.boneCount = self.fileStream.readUInt32()
 
         _ = self.fileStream.readUInt32()
         _ = self.fileStream.readUInt32()
@@ -49,7 +49,7 @@ class MSHParser():
         weights = []
         normals = []
         UV = []
-        for i in range(vertexCount):
+        for i in range(self.vertexCount):
             positions.append([self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()])
             weightsRaw = [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()]
             weights.append([weightsRaw[0], weightsRaw[1], weightsRaw[2], 1.0 - weightsRaw[0] - weightsRaw[1] - weightsRaw[2]])
@@ -63,12 +63,12 @@ class MSHParser():
         }
         
         faceInfos = []
-        for i in range(faceCount):
+        for i in range(self.faceCount):
             faceInfos.append([self.fileStream.readUInt16(), self.fileStream.readUInt16(), self.fileStream.readUInt16()])
 
         meshInfos = []
         textures = []
-        for i in range(meshCount):
+        for i in range(self.meshCount):
             mesh = {}
             length = self.fileStream.readUInt32()
             mesh['group'] = self.fileStream.readUInt32()
@@ -95,7 +95,7 @@ class MSHParser():
             meshInfos.append(mesh)
 
         boneInfos = []
-        for i in range(boneCount):
+        for i in range(self.boneCount):
             bone = {}
             bone['parentIndex'] = self.fileStream.readUInt32()
             bone['matrixGlobal'] = [

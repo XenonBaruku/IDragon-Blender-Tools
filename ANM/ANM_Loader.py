@@ -6,14 +6,14 @@ from .ANM_Parser import ANMParser
 
 
 def loadANM(filePath, armature = None, setFakeUser = False, framerate = 0):
-    parser = ANMParser(filePath)
-    boneInfos = parser.read()
+    parsedANMData = ANMParser(filePath)
+    boneInfos = parsedANMData.read()
     actual_framerate = bpy.context.scene.render.fps / bpy.context.scene.render.fps_base if framerate == 0 else framerate
     bpy.context.scene.frame_start = 0
-    bpy.context.scene.frame_end = int(parser.duration * actual_framerate) - 1
+    bpy.context.scene.frame_end = int(parsedANMData.duration * actual_framerate) - 1
 
     fileName = os.path.basename(filePath).split(".")[0]
-    action = bpy.data.actions.new(fileName + " (Frames: {})".format(int(parser.duration * actual_framerate)))
+    action = bpy.data.actions.new(fileName + " (Frames: {})".format(int(parsedANMData.duration * actual_framerate)))
     action.use_fake_user = setFakeUser
 
     try:

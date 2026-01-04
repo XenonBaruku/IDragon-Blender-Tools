@@ -5,11 +5,18 @@ from mathutils import Matrix
 
 from .MSH_Parser import MSHParser
 
+WARNINGINFO_SK_NOTFOUND = "{}: Can't find MSH file of another version for shape keys import. Shape keys import aborted."
+WARNINGINFO_SK_INCONSISTANT = "{}: Inconsistent vertex or mesh counts with another MSH file. Shape keys import aborted."
+WARNINGINFO_SK_INCONSISTANT_MESH = "{}: Inconsistent vertex counts with another MSH file. Shape keys for this mesh part are not imported."
 
-def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None, importBoundings=False, importTextures=False, textureInterpolation=None, /, *, texturesDir = None):
-    parser = MSHParser(path=filePath)
-    vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix, boundingInfos = parser.read()
+def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None, importBoundings=False, importDragonShapKeys=False, importTextures=False, textureInterpolation=None, /, *, texturesDir=None):
+    warnings = []
 
+
+    parsedMSHData = MSHParser(path=filePath)
+    vertexInfoDict, faceInfos, meshInfos, boneInfos, textures, armatureOriginMatrix, boundingInfos = parsedMSHData.read()
+    
+    fileNameFull = os.path.basename(filePath)
     fileName = os.path.basename(filePath).split(".")[0]
     if collection is None:
         master_collection = bpy.context.scene.collection
@@ -72,6 +79,49 @@ def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None
 
     if bpy.context.scene.view_settings.view_transform != 'Standard':
         bpy.context.scene.view_settings.view_transform = 'Standard'  # Closer to game color profile.
+    
+    if importDragonShapKeys:
+        directoryMSH = os.path.split(filePath)[0]
+        print("Import of shape keys enabled, detecting files now...")
+        if "small" in fileName.lower():
+            print("Small version of mesh detected for imorted MSH. Looking for big version MSH now...")
+            basisShape = 'Small'
+            deformShape = 'Big'
+            MSH2path = os.path.join(directoryMSH, fileNameFull.replace('-Small', '-Big').replace('-small', '-big').replace('Small', 'Big').replace('small', 'big'))
+            print("Attempting: " + MSH2path)
+            if not os.path.exists(MSH2path):
+                print(f"Shape key mesh not found: {MSH2path}\n")
+                MSH2path = os.path.join(directoryMSH, fileNameFull.replace('-Small', '').replace('-small', '').replace('Small', '').replace('small', ''))
+                print("Attempting: " + MSH2path)
+        elif "big" in fileName.lower():
+            print("Big version of mesh detected for imorted MSH. Looking for small version MSH now...")
+            basisShape = 'Big'
+            deformShape = 'Small'
+            MSH2path = os.path.join(directoryMSH, fileNameFull.replace('-Big', '-Small').replace('-big', '-small').replace('Big', 'Small').replace('big', 'small'))
+            print("Attempting: " + MSH2path)
+        else:
+            print("Can't find specific suffix from filename of imorted MSH. Imported MSH might be big version of mesh. Looking for small version MSH now...")
+            basisShape = 'Big'
+            deformShape = 'Small'
+            MSH2path = os.path.join(directoryMSH, f'{fileName}Small.MSH')
+            print("Attempting: " + MSH2path)
+            if not os.path.exists(MSH2path):
+                print(f"Shape key mesh not found: {MSH2path}\n")
+                MSH2path = os.path.join(directoryMSH, f'{fileName}-Small.MSH')
+                print("Attempting: " + MSH2path)
+
+        if (not MSH2path) or MSH2path == "" or (not os.path.exists(MSH2path)):
+            print(WARNINGINFO_SK_NOTFOUND.format(fileNameFull))
+            warnings.append(WARNINGINFO_SK_NOTFOUND.format(fileNameFull))
+            importDragonShapKeys = False
+        else:
+            print(f"Shape key mesh found: {MSH2path}\n")
+            parsedMSHData2 = MSHParser(MSH2path)
+            vertexInfoDict2, _, meshInfos2, _, _, _, _ = parsedMSHData2.read()
+            if parsedMSHData2.vertexCount != parsedMSHData.vertexCount or parsedMSHData2.meshCount != parsedMSHData.meshCount:
+                print(WARNINGINFO_SK_INCONSISTANT.format(fileNameFull))
+                warnings.append(WARNINGINFO_SK_INCONSISTANT.format(fileNameFull))
+                importDragonShapKeys = False
 
     #meshName = fileName + '_Group[{}]_Index[{}]_Material[{}]'
     meshesToMerge = {}
@@ -87,7 +137,9 @@ def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None
         elif mergeMeshes == 'GROUP':
             meshName = fileName + '_merged_Group[{}]'.format(mesh['group'])
         elif mergeMeshes == 'TEXTURE':
-            meshName = fileName + '_merged_Material[{}]'.format(mesh['textureIndex'])
+            meshName = fileName + '_merged_Texture[{}]'.format(textures[mesh['textureIndex']])
+        elif mergeMeshes == 'ALL':
+            meshName = fileName + '_merged'
         meshNew = bpy.data.meshes.new(meshName)
         obj = bpy.data.objects.new(meshNew.name, meshNew)
         colMeshes.objects.link(obj)
@@ -181,7 +233,7 @@ def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None
                 links.new(diffuseShader.outputs[0], mixShader.inputs[2])
                 links.new(UVMapNode.outputs[0], texImage.inputs[0])
                 links.new(texImage.outputs[0], diffuseShader.inputs[0])
-                if parser.renderFlags & (1 << 4):  # Alpha blending
+                if parsedMSHData.renderFlags & (1 << 4):  # Alpha blending
                     links.new(texImage.outputs[1], mixShader.inputs[0])
                 else:  # Alpha testing
                     mathNode = nodes.new('ShaderNodeMath')
@@ -199,29 +251,56 @@ def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None
             mat_slot.link = 'OBJECT'
             mat_slot.material = mat
 
-            if mergeMeshes == 'GROUP':
-                try:
-                    meshesToMerge[mesh['group']].append(obj)
-                except:
-                    meshesToMerge[mesh['group']] = []
-                    meshesToMerge[mesh['group']].append(obj)
-            elif mergeMeshes == 'TEXTURE':
-                try:
-                    meshesToMerge[mesh['textureIndex']].append(obj)
-                except:
-                    meshesToMerge[mesh['textureIndex']] = []
-                    meshesToMerge[mesh['textureIndex']].append(obj)
+        if importDragonShapKeys:
+            sk_basis = obj.shape_key_add(name=basisShape)
+            sk_basis.interpolation = 'KEY_LINEAR'
+            sk_deform = obj.shape_key_add(name=deformShape, from_mix=False)
+            sk_deform.interpolation = 'KEY_LINEAR'
+            mesh2 = meshInfos2[meshInfos.index(mesh)]
 
-            returnedObjects.append(obj)
+            if len(vertexInfoDict2['positions'][mesh2['vertexStart']:mesh2['vertexStart'] + mesh2['vertexCount']]) == len(meshNew.vertices):
+                for i in range(len(meshNew.vertices)):
+                    sk_deform.data[i].co = vertexInfoDict2['positions'][mesh2['vertexStart'] + i]
+                meshNew.shape_keys.use_relative = True
+            else:
+                print(WARNINGINFO_SK_INCONSISTANT_MESH.format(meshName))
+                warnings.append(WARNINGINFO_SK_INCONSISTANT_MESH.format(meshName))
+                
+        if mergeMeshes == 'GROUP':
+            try:
+                meshesToMerge[mesh['group']].append(obj)
+            except:
+                meshesToMerge[mesh['group']] = []
+                meshesToMerge[mesh['group']].append(obj)
+        elif mergeMeshes == 'TEXTURE':
+            try:
+                meshesToMerge[mesh['textureIndex']].append(obj)
+            except:
+                meshesToMerge[mesh['textureIndex']] = []
+                meshesToMerge[mesh['textureIndex']].append(obj)
+        elif mergeMeshes == 'ALL':
+            try:
+                meshesToMerge[0].append(obj)
+            except:
+                meshesToMerge[0] = []
+                meshesToMerge[0].append(obj)
+
+        returnedObjects.append(obj)
 
     if mergeMeshes != 'NONE':
         for listObj in meshesToMerge.values():
+            mergedMeshes = []
             with bpy.context.temp_override(active_object=listObj[0], selected_editable_objects=listObj):
                 bpy.ops.object.select_all(action='DESELECT')
-                for groupObj in listObj:
-                    groupObj.select_set(True)
+                for mergeObj in listObj:
+                    mergeObj.select_set(True)
+                    mergedMeshes.append(mergeObj.data)
                 bpy.context.view_layer.objects.active = listObj[0]
                 bpy.ops.object.join()
+
+                for meshDataMerged in mergedMeshes:
+                    if meshDataMerged.users == 0:
+                        bpy.data.meshes.remove(meshDataMerged)
 
     if importBoundings:
         if createCollections:
@@ -266,5 +345,5 @@ def loadMSH(filePath, collection=None, createCollections=False, mergeMeshes=None
 
     if armatureObject:
         bpy.context.view_layer.objects.active = armatureObject
-    bpy.ops.object.select_all(action='DESELECT')        
-    return returnedObjects
+    bpy.ops.object.select_all(action='DESELECT')
+    return returnedObjects, warnings
