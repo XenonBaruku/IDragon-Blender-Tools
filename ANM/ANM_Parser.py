@@ -1,3 +1,5 @@
+#from math import radians
+
 from ..COMMON.Reader import FStream
 
 
@@ -20,10 +22,9 @@ class ANMParser():
 
         self.boneCount = self.fileStream.readUInt32()
         self.duration = self.fileStream.readFloat32()
-        unknownMatrix = [
-            [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()],
-            [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()]
-        ]
+        self.armatureTranslation = [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()]
+        #self.armatureRotationEuler = [radians(self.fileStream.readFloat32()), radians(self.fileStream.readFloat32()), radians(self.fileStream.readFloat32())]  # Not sure
+        unknownVec3 = [self.fileStream.readFloat32(), self.fileStream.readFloat32(), self.fileStream.readFloat32()]
 
         boneInfos = []
         for i in range(self.boneCount):
@@ -49,6 +50,9 @@ class ANMParser():
             boneInfo['frameInfos'] = frameInfos
 
             boneInfos.append(boneInfo)
+
+        ANMInfo = self.fileStream.readString(self.fileStream.readUInt32())
+        print(f"\nANM Info: {ANMInfo}\n")
 
         return boneInfos
 
